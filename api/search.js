@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 
-const CLIENT_ID = '6DXwcpKHsdka1tBzbc7q';
-const CLIENT_SECRET = 'Fcz0qmcDwe';
+const CLIENT_ID = process.env.NAVER_CLIENT_ID;
+const CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
 
 const MARTS = ['이마트', '홈플러스', '롯데마트'];
 const MART_MAP = {
