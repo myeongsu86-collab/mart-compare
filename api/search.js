@@ -3,11 +3,15 @@ const fetch = require('node-fetch');
 const CLIENT_ID = process.env.NAVER_CLIENT_ID;
 const CLIENT_SECRET = process.env.NAVER_CLIENT_SECRET;
 
-const MARTS = ['이마트', '홈플러스', '롯데마트'];
+const MARTS = ['이마트', '홈플러스', '롯데마트', 'GS더프레시', '롯데슈퍼', '노브랜드'];
+
 const MART_MAP = {
-  '이마트': ['이마트', 'SSG.COM', 'ssg', '이마트몰'],
+  '이마트': ['이마트몰', '이마트', 'SSG.COM', 'ssg'],
   '홈플러스': ['홈플러스', 'homeplus', '홈플러스 익스프레스'],
-  '롯데마트': ['롯데마트', 'lottemart', '롯데슈퍼', '롯데마트제타'],
+  '롯데마트': ['롯데마트', 'lottemart', '롯데마트제타'],
+  'GS더프레시': ['GS더프레시', 'GS THE FRESH', 'gs더프레시'],
+  '롯데슈퍼': ['롯데슈퍼'],
+  '노브랜드': ['노브랜드'],
 };
 
 async function searchNaver(query) {
