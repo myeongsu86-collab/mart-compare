@@ -8,13 +8,19 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; }
 .container { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
-h1 { font-size: 22px; font-weight: 600; margin-bottom: 1.5rem; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 1rem; }
+.tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; }
 .search-box { background: #fff; border-radius: 12px; border: 1px solid #e5e5e5; padding: 1.25rem; margin-bottom: 1rem; }
 .row { display: flex; gap: 8px; }
 .row input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 15px; outline: none; }
 .row input:focus { border-color: #aaa; }
+input[type=text], textarea { padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; outline: none; width: 100%; font-family: inherit; }
+input[type=text]:focus, textarea:focus { border-color: #aaa; }
+textarea { resize: none; height: 80px; }
 button { padding: 10px 18px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 14px; cursor: pointer; white-space: nowrap; }
 button:hover { background: #f5f5f5; }
+.btn-primary { background: #111; color: #fff; border-color: #111; width: 100%; margin-top: 8px; }
+.btn-primary:hover { background: #333; }
 .filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
 .chip { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; color: #666; }
 .chip.active { background: #111; color: #fff; border-color: #111; }
@@ -26,6 +32,7 @@ button:hover { background: #f5f5f5; }
 .results { display: flex; flex-direction: column; gap: 10px; }
 .card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 12px; }
 .card.best { border: 2px solid #22c55e; }
+.card.post { flex-direction: column; align-items: flex-start; margin-bottom: 10px; }
 .rank { font-size: 16px; font-weight: 600; color: #ccc; min-width: 20px; text-align: center; }
 .rank.gold { color: #f59e0b; }
 .thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: #f5f5f5; flex-shrink: 0; border: 1px solid #eee; }
@@ -44,45 +51,82 @@ button:hover { background: #f5f5f5; }
 .link-btn { font-size: 12px; color: #3b82f6; border: 1px solid #e5e5e5; border-radius: 8px; padding: 5px 10px; text-decoration: none; white-space: nowrap; }
 .empty { text-align: center; padding: 3rem; color: #ccc; font-size: 14px; }
 .loading { text-align: center; padding: 3rem; color: #999; font-size: 14px; }
+.post-header { display: flex; justify-content: space-between; width: 100%; margin-bottom: 6px; }
+.post-nickname { font-weight: 600; font-size: 14px; }
+.post-date { font-size: 12px; color: #999; }
+.post-content { font-size: 14px; line-height: 1.6; margin-bottom: 10px; width: 100%; }
+.comments-area { width: 100%; border-top: 1px solid #f0f0f0; padding-top: 8px; margin-bottom: 8px; }
+.comment-row { display: flex; gap: 8px; margin-bottom: 6px; }
+.comment-nick { font-size: 12px; font-weight: 600; color: #666; }
+.comment-text { font-size: 12px; color: #333; }
+.comment-input-row { display: flex; gap: 6px; width: 100%; margin-top: 8px; }
+.comment-input-row input { font-size: 12px; padding: 6px 10px; }
+.comment-input-row input:first-child { width: 80px; flex: none; }
+.comment-input-row input:nth-child(2) { flex: 1; }
+.comment-input-row button { padding: 6px 12px; font-size: 12px; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1>마트 가격 비교</h1>
 
-  <div class="search-box">
-    <div class="row">
-      <input type="text" id="query" value="계란" placeholder="검색어 (예: 계란, 햄, 우유)" onkeydown="if(event.key==='Enter') runSearch()" />
-      <button onclick="runSearch()">검색</button>
+  <div class="tabs">
+    <button class="chip active" onclick="showTab('price', this)">가격 비교</button>
+    <button class="chip" onclick="showTab('community', this)">오늘 뭐 먹었어요</button>
+  </div>
+
+  <div id="price">
+    <div class="search-box">
+      <div class="row">
+        <input type="text" id="query" value="계란" placeholder="검색어 (예: 계란, 햄, 우유)" onkeydown="if(event.key==='Enter') runSearch()" />
+        <button onclick="runSearch()">검색</button>
+      </div>
     </div>
+
+    <div class="filter-row">
+      <button class="chip active" onclick="setFilter('all',this)">전체</button>
+      <button class="chip" onclick="setFilter('이마트',this)">이마트</button>
+      <button class="chip" onclick="setFilter('홈플러스',this)">홈플러스</button>
+      <button class="chip" onclick="setFilter('롯데마트',this)">롯데마트</button>
+      <button class="chip" onclick="setFilter('GS더프레시',this)">GS더프레시</button>
+      <button class="chip" onclick="setFilter('롯데슈퍼',this)">롯데슈퍼</button>
+      <button class="chip" onclick="setFilter('노브랜드',this)">노브랜드</button>
+    </div>
+
+    <div class="summary" id="summaryRow" style="display:none;">
+      <div class="metric"><div class="metric-label">최저가</div><div class="metric-value" id="metMin">-</div></div>
+      <div class="metric"><div class="metric-label">평균가</div><div class="metric-value" id="metAvg">-</div></div>
+      <div class="metric"><div class="metric-label">최고가</div><div class="metric-value" id="metMax">-</div></div>
+    </div>
+
+    <div class="status" id="statusBar"></div>
+    <div class="results" id="results"><div class="loading">검색어를 입력하고 검색 버튼을 눌러주세요.</div></div>
   </div>
 
-  <div class="filter-row">
-    <button class="chip active" onclick="setFilter('all',this)">전체</button>
-    <button class="chip" onclick="setFilter('이마트',this)">이마트</button>
-    <button class="chip" onclick="setFilter('홈플러스',this)">홈플러스</button>
-    <button class="chip" onclick="setFilter('롯데마트',this)">롯데마트</button>
-    <button class="chip" onclick="setFilter('GS더프레시',this)">GS더프레시</button>
-    <button class="chip" onclick="setFilter('롯데슈퍼',this)">롯데슈퍼</button>
-    <button class="chip" onclick="setFilter('노브랜드',this)">노브랜드</button>
+  <div id="community" style="display:none;">
+    <div class="search-box">
+      <input type="text" id="postNickname" placeholder="닉네임" style="margin-bottom:8px;" />
+      <textarea id="postContent" placeholder="오늘 뭐 먹었는지 공유해주세요!"></textarea>
+      <button class="btn-primary" onclick="submitPost()">올리기</button>
+    </div>
+    <div id="postList"><div class="loading">불러오는 중...</div></div>
   </div>
-
-  <div class="summary" id="summaryRow" style="display:none;">
-    <div class="metric"><div class="metric-label">최저가</div><div class="metric-value" id="metMin">-</div></div>
-    <div class="metric"><div class="metric-label">평균가</div><div class="metric-value" id="metAvg">-</div></div>
-    <div class="metric"><div class="metric-label">최고가</div><div class="metric-value" id="metMax">-</div></div>
-  </div>
-
-  <div class="status" id="statusBar"></div>
-  <div class="results" id="results"><div class="loading">검색어를 입력하고 검색 버튼을 눌러주세요.</div></div>
 </div>
 
 <script>
 let allItems = [], activeFilter = 'all';
 
+function showTab(tab, el) {
+  document.getElementById('price').style.display = tab === 'price' ? 'block' : 'none';
+  document.getElementById('community').style.display = tab === 'community' ? 'block' : 'none';
+  document.querySelectorAll('.tabs .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  if (tab === 'community') loadPosts();
+}
+
 function setFilter(mall, el) {
   activeFilter = mall;
-  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.filter-row .chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   renderResults(allItems);
 }
@@ -101,19 +145,15 @@ function renderResults(items) {
   const filtered = activeFilter === 'all' ? items : items.filter(i => (i.martName||'').includes(activeFilter));
   const el = document.getElementById('results');
   const sumRow = document.getElementById('summaryRow');
-  if (!filtered.length) {
-    el.innerHTML = '<div class="empty">결과가 없습니다.</div>';
-    sumRow.style.display = 'none';
-    return;
-  }
+  if (!filtered.length) { el.innerHTML = '<div class="empty">결과가 없습니다.</div>'; sumRow.style.display='none'; return; }
   const prices = filtered.map(i => i.price);
   const min = Math.min(...prices);
-  document.getElementById('metMin').textContent = min.toLocaleString() + '원';
-  document.getElementById('metAvg').textContent = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length).toLocaleString() + '원';
-  document.getElementById('metMax').textContent = Math.max(...prices).toLocaleString() + '원';
-  sumRow.style.display = 'grid';
-  el.innerHTML = filtered.map((item, idx) => {
-    const isBest = item.price === min;
+  document.getElementById('metMin').textContent = min.toLocaleString()+'원';
+  document.getElementById('metAvg').textContent = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length).toLocaleString()+'원';
+  document.getElementById('metMax').textContent = Math.max(...prices).toLocaleString()+'원';
+  sumRow.style.display='grid';
+  el.innerHTML = filtered.map((item,idx) => {
+    const isBest = item.price===min;
     const thumb = item.image ? `<img class="thumb" src="${item.image}" alt="" onerror="this.className='thumb-placeholder'">` : `<div class="thumb-placeholder"></div>`;
     return `<div class="card ${isBest?'best':''}">
       <div class="rank ${idx===0?'gold':''}">${idx+1}</div>
@@ -122,7 +162,7 @@ function renderResults(items) {
         <div class="product-name">${clean(item.title)}</div>
         <div class="product-meta">
           <span class="badge ${getBadge(item.martName)}">${item.martName||item.mallName}</span>
-          ${isBest ? '<span class="best-badge">최저가</span>' : ''}
+          ${isBest?'<span class="best-badge">최저가</span>':''}
         </div>
       </div>
       <div class="price-col"><div class="price">${item.price.toLocaleString()}원</div></div>
@@ -135,33 +175,93 @@ async function runSearch() {
   const query = document.getElementById('query').value.trim() || '계란';
   const statusEl = document.getElementById('statusBar');
   const el = document.getElementById('results');
-
   el.innerHTML = '<div class="loading">검색 중...</div>';
-  document.getElementById('summaryRow').style.display = 'none';
-  statusEl.textContent = '';
-
+  document.getElementById('summaryRow').style.display='none';
+  statusEl.textContent='';
   try {
     const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
     if (!res.ok) throw new Error(`오류: ${res.status}`);
     const data = await res.json();
     if (data.error) throw new Error(data.error);
-
-    const items = (data.items || [])
-      .sort((a,b) => parseInt(a.lprice||a.price) - parseInt(b.lprice||b.price))
-      .map(i => ({ ...i, price: parseInt(i.lprice || i.price) }));
-
-    if (!items.length) {
-      statusEl.textContent = '결과가 없습니다. 검색어를 바꿔보세요.';
-      allItems = [];
-      renderResults([]);
-      return;
-    }
-
-    statusEl.textContent = `"${query}" 검색 결과 ${items.length}개`;
-    allItems = items;
-    renderResults(allItems);
+    const items = (data.items||[]).sort((a,b)=>parseInt(a.lprice||a.price)-parseInt(b.lprice||b.price)).map(i=>({...i,price:parseInt(i.lprice||i.price)}));
+    if (!items.length) { statusEl.textContent='결과가 없습니다.'; allItems=[]; renderResults([]); return; }
+    statusEl.textContent=`"${query}" 검색 결과 ${items.length}개`;
+    allItems=items; renderResults(allItems);
   } catch(e) {
-    el.innerHTML = `<div class="empty">오류가 발생했습니다: ${e.message}</div>`;
+    el.innerHTML=`<div class="empty">오류: ${e.message}</div>`;
+  }
+}
+
+async function loadPosts() {
+  const el = document.getElementById('postList');
+  el.innerHTML = '<div class="loading">불러오는 중...</div>';
+  try {
+    const res = await fetch('/api/posts');
+    const posts = await res.json();
+    if (!posts.length) { el.innerHTML='<div class="empty">아직 글이 없어요. 첫 번째로 올려보세요!</div>'; return; }
+    el.innerHTML = posts.map(p => `
+      <div class="card post">
+        <div class="post-header">
+          <span class="post-nickname">${p.nickname}</span>
+          <span class="post-date">${new Date(p.created_at).toLocaleDateString('ko-KR')}</span>
+        </div>
+        <p class="post-content">${p.content}</p>
+        <div id="comments-${p.id}" class="comments-area"></div>
+        <div class="comment-input-row">
+          <input type="text" placeholder="닉네임" id="cn-${p.id}" />
+          <input type="text" placeholder="댓글 달기..." id="cc-${p.id}" onkeydown="if(event.key==='Enter') submitComment(${p.id})" />
+          <button onclick="submitComment(${p.id})">등록</button>
+        </div>
+      </div>
+    `).join('');
+    posts.forEach(p => loadComments(p.id));
+  } catch(e) {
+    el.innerHTML=`<div class="empty">오류: ${e.message}</div>`;
+  }
+}
+
+async function loadComments(postId) {
+  const el = document.getElementById(`comments-${postId}`);
+  const res = await fetch(`/api/comments?post_id=${postId}`);
+  const comments = await res.json();
+  if (!comments.length) { el.innerHTML=''; return; }
+  el.innerHTML = comments.map(c => `
+    <div class="comment-row">
+      <span class="comment-nick">${c.nickname}</span>
+      <span class="comment-text">${c.content}</span>
+    </div>
+  `).join('');
+}
+
+async function submitPost() {
+  const nickname = document.getElementById('postNickname').value.trim();
+  const content = document.getElementById('postContent').value.trim();
+  if (!nickname || !content) { alert('닉네임과 내용을 입력해주세요!'); return; }
+  const res = await fetch('/api/posts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nickname, content })
+  });
+  if (res.ok) {
+    document.getElementById('postNickname').value='';
+    document.getElementById('postContent').value='';
+    loadPosts();
+  }
+}
+
+async function submitComment(postId) {
+  const nickname = document.getElementById(`cn-${postId}`).value.trim();
+  const content = document.getElementById(`cc-${postId}`).value.trim();
+  if (!nickname || !content) { alert('닉네임과 댓글을 입력해주세요!'); return; }
+  const res = await fetch('/api/comments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ post_id: postId, nickname, content })
+  });
+  if (res.ok) {
+    document.getElementById(`cn-${postId}`).value='';
+    document.getElementById(`cc-${postId}`).value='';
+    loadComments(postId);
   }
 }
 </script>
