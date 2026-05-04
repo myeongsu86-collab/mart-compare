@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>마트 가격 비교</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #111; }
+.container { max-width: 720px; margin: 0 auto; padding: 2rem 1rem; }
+h1 { font-size: 22px; font-weight: 600; margin-bottom: 1.5rem; }
+.search-box { background: #fff; border-radius: 12px; border: 1px solid #e5e5e5; padding: 1.25rem; margin-bottom: 1rem; }
+input[type=text], input[type=password] { width: 100%; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 8px; outline: none; }
+input:focus { border-color: #aaa; }
+.row { display: flex; gap: 8px; }
+.row input { flex: 1; margin-bottom: 0; }
+button { padding: 10px 18px; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 14px; cursor: pointer; white-space: nowrap; }
+button:hover { background: #f5f5f5; }
+.filter-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
+.chip { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 1px solid #ddd; background: #fff; cursor: pointer; color: #666; }
+.chip.active { background: #111; color: #fff; border-color: #111; }
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 1rem; }
+.metric { background: #fff; border-radius: 10px; padding: 1rem; border: 1px solid #e5e5e5; }
+.metric-label { font-size: 12px; color: #999; margin-bottom: 4px; }
+.metric-value { font-size: 18px; font-weight: 600; }
+.status { font-size: 13px; color: #999; margin-bottom: 1rem; min-height: 18px; }
+.results { display: flex; flex-direction: column; gap: 10px; }
+.card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1rem; display: flex; align-items: center; gap: 12px; }
+.card.best { border: 2px solid #22c55e; }
+.rank { font-size: 16px; font-weight: 600; color: #ccc; min-width: 20px; text-align: center; }
+.rank.gold { color: #f59e0b; }
+.thumb { width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background: #f5f5f5; flex-shrink: 0; border: 1px solid #eee; }
+.thumb-placeholder { width: 56px; height: 56px; border-radius: 8px; background: #f5f5f5; flex-shrink: 0; }
+.badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+.badge-emart { background: #dbeafe; color: #1e40af; }
+.badge-homeplus { background: #dcfce7; color: #166534; }
+.badge-lotte { background: #fee2e2; color: #991b1b; }
+.product-info { flex: 1; min-width: 0; }
+.product-name { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.product-meta { font-size: 12px; color: #999; margin-top: 4px; display: flex; gap: 6px; align-items: center; }
+.best-badge { font-size: 11px; background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 6px; }
+.price-col { text-align: right; min-width: 90px; }
+.price { font-size: 17px; font-weight: 600; }
+.link-btn { font-size: 12px; color: #3b82f6; border: 1px solid #e5e5e5; border-radius: 8px; padding: 5px 10px; text-decoration: none; white-space: nowrap; }
+.empty { text-align: center; padding: 3rem; color: #ccc; font-size: 14px; }
+.tag { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; white-space: nowrap; }
+.tag-demo { background: #fef3c7; color: #92400e; }
+.tag-live { background: #dcfce7; color: #166534; }
+.tag-loading { background: #f3f4f6; color: #6b7280; }
+.tag-error { background: #fee2e2; color: #991b1b; }
+.api-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.api-row input { flex: 1; margin-bottom: 0; font-family: monospace; font-size: 13px; }
+.api-label { font-size: 13px; color: #999; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>마트 가격 비교</h1>
+
+  <div class="search-box">
+    <div class="api-row">
+      <span class="api-label">API 키</span>
+      <input type="password" id="apiKey" placeholder="ClientID:ClientSecret" />
+      <span id="modeTag" class="tag tag-demo">데모</span>
+    </div>
+    <div class="row">
+      <input type="text" id="query" value="계란" placeholder="검색어 (예: 계란, 햄, 우유)" onkeydown="if(event.key==='Enter') runSearch()" />
+      <button onclick="runSearch()">검색</button>
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <button class="chip active" onclick="setFilter('all',this)">전체</button>
+    <button class="chip" onclick="setFilter('이마트',this)">이마트</button>
+    <button class="chip" onclick="setFilter('홈플러스',this)">홈플러스</button>
+    <button class="chip" onclick="setFilter('롯데마트',this)">롯데마트</button>
+  </div>
+
+  <div class="summary" id="summaryRow" style="display:none;">
+    <div class="metric"><div class="metric-label">최저가</div><div class="metric-value" id="metMin">-</div></div>
+    <div class="metric"><div class="metric-label">평균가</div><div class="metric-value" id="metAvg">-</div></div>
+    <div class="metric"><div class="metric-label">최고가</div><div class="metric-value" id="metMax">-</div></div>
+  </div>
+
+  <div class="status" id="statusBar">API 키를 입력하면 실시간 데이터로 전환됩니다.</div>
+  <div class="results" id="results"></div>
+</div>
+
+<script>
+const DEMO = [
+  { title: "풀무원 목초란 30구 대란", price: 8900, martName: "이마트", link: "#", image: "https://shopping-phinf.pstatic.net/main_9053580/90535805806.1.jpg" },
+  { title: "신선특란 30개입", price: 7990, martName: "홈플러스", link: "#", image: "https://shopping-phinf.pstatic.net/main_1102528/11025287200.4.jpg" },
+  { title: "한국계란 신선계란 30구", price: 7200, martName: "롯데마트", link: "#", image: "" },
+  { title: "이마트 자체브랜드 계란 15구", price: 4200, martName: "이마트", link: "#", image: "" },
+  { title: "농협안심란 30구 대란", price: 8200, martName: "롯데마트", link: "#", image: "" },
+];
+
+const SERVER_URL = 'https://여기에-railway-주소.up.railway.app';
+
+let allItems = [], activeFilter = 'all';
+
+function setFilter(mall, el) {
+  activeFilter = mall;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderResults(allItems);
+}
+
+function getBadge(name) {
+  if (name.includes('이마트')) return 'badge-emart';
+  if (name.includes('홈플러스')) return 'badge-homeplus';
+  if (name.includes('롯데마트')) return 'badge-lotte';
+  return '';
+}
+
+function clean(t) { return t.replace(/<[^>]+>/g, ''); }
+
+function renderResults(items) {
+  const filtered = activeFilter === 'all' ? items : items.filter(i => (i.martName||'').includes(activeFilter));
+  const el = document.getElementById('results');
+  const sumRow = document.getElementById('summaryRow');
+  if (!filtered.length) { el.innerHTML = '<div class="empty">결과가 없습니다.</div>'; sumRow.style.display='none'; return; }
+  const prices = filtered.map(i=>i.price);
+  const min = Math.min(...prices);
+  document.getElementById('metMin').textContent = min.toLocaleString()+'원';
+  document.getElementById('metAvg').textContent = Math.round(prices.reduce((a,b)=>a+b,0)/prices.length).toLocaleString()+'원';
+  document.getElementById('metMax').textContent = Math.max(...prices).toLocaleString()+'원';
+  sumRow.style.display='grid';
+  el.innerHTML = filtered.map((item,idx) => {
+    const isBest = item.price===min;
+    const thumb = item.image ? `<img class="thumb" src="${item.image}" alt="" onerror="this.className='thumb-placeholder'">` : `<div class="thumb-placeholder"></div>`;
+    return `<div class="card ${isBest?'best':''}">
+      <div class="rank ${idx===0?'gold':''}">${idx+1}</div>
+      ${thumb}
+      <div class="product-info">
+        <div class="product-name">${clean(item.title)}</div>
+        <div class="product-meta">
+          <span class="badge ${getBadge(item.martName)}">${item.martName}</span>
+          ${isBest?'<span class="best-badge">최저가</span>':''}
+        </div>
+      </div>
+      <div class="price-col"><div class="price">${item.price.toLocaleString()}원</div></div>
+      <a class="link-btn" href="${item.link}" target="_blank">바로가기</a>
+    </div>`;
+  }).join('');
+}
+
+async function runSearch() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const query = document.getElementById('query').value.trim() || '계란';
+  const tag = document.getElementById('modeTag');
+  const statusEl = document.getElementById('statusBar');
+  if (!apiKey) {
+    tag.textContent='데모'; tag.className='tag tag-demo';
+    statusEl.textContent='데모 모드입니다.';
+    allItems=[...DEMO].sort((a,b)=>a.price-b.price);
+    renderResults(allItems); return;
+  }
+  tag.textContent='검색 중'; tag.className='tag tag-loading';
+  statusEl.textContent=`"${query}" 검색 중...`;
+  document.getElementById('results').innerHTML='';
+  document.getElementById('summaryRow').style.display='none';
+  try {
+    const res = await fetch(`${SERVER_URL}/api/search?q=${encodeURIComponent(query)}`);
+    if (!res.ok) throw new Error(`서버 오류: ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    const items = (data.items||[]).sort((a,b)=>parseInt(a.lprice||a.price)-parseInt(b.lprice||b.price)).map(i=>({...i,price:parseInt(i.lprice||i.price)}));
+    if (!items.length) { tag.textContent='실시간'; tag.className='tag tag-live'; statusEl.textContent='결과가 없습니다.'; allItems=[]; renderResults([]); return; }
+    tag.textContent='실시간'; tag.className='tag tag-live';
+    statusEl.textContent=`"${query}" 검색 결과 ${items.length}개`;
+    allItems=items; renderResults(allItems);
+  } catch(e) {
+    tag.textContent='오류'; tag.className='tag tag-error';
+    statusEl.textContent=`오류: ${e.message}`;
+    allItems=[...DEMO].sort((a,b)=>a.price-b.price); renderResults(allItems);
+  }
+}
+
+runSearch();
+</script>
+</body>
+</html>
